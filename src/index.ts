@@ -11,7 +11,9 @@ app.use(bodyParser.urlencoded({ extended: true }))
 
 /* ROUTES */
 import { noteRouter }  from './routes/notes';
+import { billingRouter }  from './routes/billing';
 
 app.use('/notes', noteRouter);
+app.use('/billing', billingRouter);
 
 module.exports.handler = serverless(app);
