@@ -1,4 +1,3 @@
-import express = require("express");
 import { Router } from 'express'
 import { readNote, createNote, updateNote, deleteNote, listNotes } from '../controllers/notes';
 const noteRouter: Router = Router();
