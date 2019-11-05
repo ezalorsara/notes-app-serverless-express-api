@@ -1,23 +1,110 @@
 import express = require('express');
 import AWS = require('aws-sdk');
+import uuid from 'uuid';
 
-const NOTES_TABLE = process.env.NOTES_TABLE;
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
-const readNote = (req: express.Request, res: express.Response) => {
-  res.send("READ NOTE").end();
+const readNote = (req: any, res: express.Response) => {
+
+  const params = {
+    TableName: process.env.NOTES_TABLE,
+    Key: {
+      userId: req.requestContext.identity.cognitoIdentityId,
+      noteId: req.params.id
+    }
+  }
+
+  dynamoDb.get(params, (error, result) => {
+    if (error) {
+      console.log(error);
+      res.status(400).json({ error: 'Could not get notes' });
+    }
+
+    if (result.Item) {
+      res.json(result.Item);
+    } else {
+      res.status(400).json({ error: 'Item not found' });
+    }
+  });
+
 };
 
-const createNote = (req: express.Request, res: express.Response) => {
-  res.send("CREATE NOTE").end();
+const createNote = (req: any, res: express.Response) => {
+
+  const { content, attachment } = JSON.parse(req.body);
+
+  const params = {
+    TableName: process.env.NOTES_TABLE,
+    Item: {
+      userId: req.requestContext.identity.cognitoIdentityId,
+      noteId: uuid.v1(),
+      content,
+      attachment,
+      createdAt: Date.now()
+    }
+  }
+
+  dynamoDb.put(params, (error, result) => {
+    if (error) {
+      console.log(error);
+      res.status(400).json({ error: 'Could not insert notes' });
+    }
+
+    res.json(params.Item);
+
+  });
 };
 
-const updateNote = (req: express.Request, res: express.Response) => {
-  res.send("UPDATE NOTE").end();
+const updateNote = (req: any, res: express.Response) => {
+
+  const { content, attachment } = JSON.parse(req.body);
+
+  const params = {
+    TableName: process.env.NOTES_TABLE,
+    Key: {
+      userId: req.requestContext.identity.cognitoIdentityId,
+      noteId: req.params.id
+    },
+    UpdateExpression: "SET content = :content, attachment = :attachment",
+    ExpressionAttributeValues: {
+      ":attachment": attachment || null,
+      ":content": content || null
+    },
+    ReturnValues: "ALL_NEW"
+  };
+
+  dynamoDb.update(params, (error, result) => {
+    if (error) {
+      console.log(error);
+      res.status(400).json({ error: 'Could not update notes' });
+    }
+    res.json({
+      noteId: req.params.id,
+      message: 'Successfully updated!'
+    });
+  });
 };
 
-const deleteNote = (req: express.Request, res: express.Response) => {
-  res.send("DELETE NOTE").end();
+const deleteNote = (req: any, res: express.Response) => {
+
+  const params = {
+    TableName: process.env.NOTES_TABLE,
+    Key: {
+      userId: req.requestContext.identity.cognitoIdentityId,
+      noteId: req.params.id
+    }
+  };
+
+  dynamoDb.delete(params, (error, result) => {
+    if (error) {
+      console.log(error);
+      res.status(400).json({ error: 'Could not delete notes' });
+    }
+    res.json({
+      noteId: req.params.id,
+      message: 'Successfully deleted!'
+    });
+  });
 };
 
 const listNotes = (req: any, res: express.Response) => {
@@ -33,7 +120,7 @@ const listNotes = (req: any, res: express.Response) => {
   dynamoDb.query(params, (error, result) => {
     if (error) {
       console.log(error);
-      res.status(400).json({ error: 'Could not get notes' });
+      res.status(400).json({ error: 'Could not get list of notes' });
     }
 
     res.json(result.Items);
