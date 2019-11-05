@@ -1,0 +1,32 @@
+service: note-express-api
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: dev
+  region: us-east-2
+
+functions:
+  app:
+    handler: dist/index.handler
+    events:
+      - http:
+          path: notes
+          method: get
+          cors: true
+      - http:
+          path: notes/{id}
+          method: get
+          cors: true
+      - http:
+          path: notes
+          method: post
+          cors: true
+      - http:
+          path: notes/{id}
+          method: put
+          cors: true
+      - http:
+          path: notes/{id}
+          method: delete
+          cors: true
